@@ -6,104 +6,44 @@
 <title>Sistem Pengurusan Identiti Pegawai SPOA</title>
 
 <style>
-body {
-    font-family: 'Segoe UI', sans-serif;
-    margin:0;
-    background:#ffffff;
-}
-
-/* HEADER */
+body {font-family:'Segoe UI';margin:0;background:#fff;}
 header {
-    background:#392f48;
-    color:white;
-    padding:15px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    border-bottom:4px solid #c3a244;
+background:#392f48;color:white;padding:15px;
+display:flex;align-items:center;gap:10px;
+border-bottom:4px solid #c3a244;
+}
+header img{height:40px;}
+header h1{font-size:16px;margin:0;}
+
+.login-box{max-width:350px;margin:60px auto;text-align:center;}
+.login-box img{width:90px;}
+
+.card{
+background:white;padding:20px;border-radius:15px;
+box-shadow:0 6px 15px rgba(0,0,0,0.2);
+margin-top:10px;
 }
 
-header img { height:40px; }
-header h1 { font-size:16px; margin:0; }
-
-/* LOGIN */
-.login-box {
-    max-width:350px;
-    margin:60px auto;
-    text-align:center;
+input,textarea{
+width:100%;padding:12px;margin:8px 0;
+border-radius:8px;border:1px solid #ccc;
 }
 
-.login-box img {
-    width:90px;
-    margin-bottom:10px;
+button{
+padding:12px;background:#392f48;color:white;
+border:none;border-radius:8px;font-weight:bold;
+width:100%;
 }
 
-.card {
-    background:white;
-    padding:20px;
-    border-radius:15px;
-    box-shadow:0 6px 15px rgba(0,0,0,0.2);
-}
+.nav{display:flex;gap:10px;margin-bottom:15px;}
+.nav button{flex:1;}
 
-input, textarea {
-    width:100%;
-    padding:12px;
-    margin:8px 0;
-    border-radius:8px;
-    border:1px solid #ccc;
-}
+.hidden{display:none;}
+.section{border-top:3px solid #c3a244;padding-top:10px;}
 
-button {
-    width:100%;
-    padding:12px;
-    background:#392f48;
-    color:white;
-    border:none;
-    border-radius:8px;
-    font-weight:bold;
-}
+.data-row{padding:6px;border-bottom:1px solid #eee;}
 
-/* MAIN */
-.container { padding:20px; }
-
-.nav {
-    display:flex;
-    gap:10px;
-    margin-bottom:15px;
-}
-
-.nav button { flex:1; }
-
-.hidden {display:none;}
-
-.section {
-    border-top:3px solid #c3a244;
-    padding-top:10px;
-}
-
-/* DATA DISPLAY */
-.data-box {
-    background:#f8fafc;
-    padding:15px;
-    border-radius:10px;
-    margin-top:10px;
-}
-
-.data-row {
-    padding:6px 0;
-    border-bottom:1px solid #eee;
-}
-
-.data-row b {
-    color:#392f48;
-}
-
-/* NEWS */
-.news-img {
-    width:100%;
-    border-radius:10px;
-    margin-top:10px;
-}
+.news-img{width:100%;border-radius:10px;margin-top:10px;}
 </style>
 </head>
 
@@ -114,26 +54,23 @@ button {
 <h1>SISTEM PENGURUSAN IDENTITI SPOA</h1>
 </header>
 
-<!-- LOGIN -->
 <div id="loginPage" class="login-box">
 <img src="logospoa.png">
 <div class="card">
 <h2>Selamat Datang</h2>
-
 <input id="username" placeholder="Username">
 <input id="password" placeholder="Password">
-
 <button onclick="login()">Login</button>
 </div>
 </div>
 
-<!-- MAIN -->
 <div id="mainPage" class="container hidden">
 
 <div class="nav">
 <button onclick="show('home')">Home</button>
 <button onclick="show('news')">News</button>
 <button id="adminBtn" class="hidden" onclick="show('admin')">Admin</button>
+<button onclick="logout()">Logout</button>
 </div>
 
 <div id="home" class="card section"></div>
@@ -152,7 +89,7 @@ button {
 
 <hr>
 
-<h3>Senarai Pengguna</h3>
+<input id="searchUser" placeholder="Cari pengguna..." onkeyup="searchUser()">
 <div id="userList"></div>
 
 </div>
@@ -161,32 +98,34 @@ button {
 
 <script>
 let users=[];
-let news=[];
+let news=JSON.parse(localStorage.getItem("news")||"[]");
+let idleTimer;
 
-// LOAD DATA FULL
+// LOAD DATA
 fetch("SPISPOA.json")
 .then(r=>r.json())
 .then(data=>{
 users=data.map(x=>{
-return {
+return{
 raw:x,
-first:x.NAMA?.split(" ")[0]?.toUpperCase() || "",
+first:x.NAMA?.split(" ")[0]?.toUpperCase()||"",
 ic:(x["KAD PENGENALAN"]+"").replace(/[^0-9]/g,'')
-}
+};
 });
 });
 
 // LOGIN
 function login(){
-let u=document.getElementById("username").value.toUpperCase();
-let p=document.getElementById("password").value;
+let u=username.value.toUpperCase();
+let p=password.value;
 
 // ADMIN
 if(u==="ADMINSPOA2327" && p==="SPOACEMERLANG2327"){
-document.getElementById("adminBtn").classList.remove("hidden");
+adminBtn.classList.remove("hidden");
 openMain();
-document.getElementById("home").innerHTML="<h2>Selamat datang Admin</h2>";
+home.innerHTML="<h2>Selamat datang Admin</h2>";
 renderUsers();
+startIdle();
 return;
 }
 
@@ -194,62 +133,89 @@ return;
 let found=users.find(x=>x.first===u && x.ic===p);
 if(found){
 openMain();
-renderFullData(found.raw);
+renderData(found.raw);
+startIdle();
 }else{
 alert("Login gagal");
 }
 }
 
 function openMain(){
-document.getElementById("loginPage").classList.add("hidden");
-document.getElementById("mainPage").classList.remove("hidden");
+loginPage.classList.add("hidden");
+mainPage.classList.remove("hidden");
 }
 
-// PAPAR SEMUA DATA
-function renderFullData(data){
-let html="<h2>Maklumat Lengkap</h2><div class='data-box'>";
-
-for(let key in data){
-if(data[key]){
-html+=`<div class="data-row"><b>${key}:</b> ${data[key]}</div>`;
+// PAPAR DATA
+function renderData(data){
+let html="<h2>Maklumat Lengkap</h2>";
+for(let k in data){
+if(data[k]){
+html+=`<div class='data-row'><b>${k}:</b> ${data[k]}</div>`;
 }
 }
-
-html+="</div>";
-document.getElementById("home").innerHTML=html;
+home.innerHTML=html;
 }
 
 // NAV
 function show(id){
 document.querySelectorAll(".section").forEach(x=>x.classList.add("hidden"));
 document.getElementById(id).classList.remove("hidden");
-
 if(id==="news") renderNews();
 }
 
 // NEWS
 function addNews(){
-let text=document.getElementById("newsText").value;
-let img=document.getElementById("imgUrl").value;
+let t=newsText.value;
+let i=imgUrl.value;
 
-news.push({text,img});
+news.push({t,i});
+localStorage.setItem("news",JSON.stringify(news));
+
+newsText.value="";
+imgUrl.value="";
 renderNews();
 }
 
 function renderNews(){
-let box=document.getElementById("newsList");
-box.innerHTML=news.map(n=>`
+newsList.innerHTML=news.map(n=>`
 <div class="card">
-<p>${n.text}</p>
-${n.img ? `<img src="${n.img}" class="news-img">` : ""}
-</div>
-`).join("");
+<p>${n.t}</p>
+${n.i?`<img src="${n.i}" class="news-img">`:""}
+</div>`).join("");
 }
 
-// USER LIST
+// USERS
 function renderUsers(){
-let box=document.getElementById("userList");
-box.innerHTML=users.map(u=>`<p>${u.raw.NAMA}</p>`).join("");
+userList.innerHTML=users.map(u=>`<p>${u.raw.NAMA}</p>`).join("");
+}
+
+function searchUser(){
+let q=searchUser.value.toLowerCase();
+userList.innerHTML=users.filter(u=>u.raw.NAMA.toLowerCase().includes(q))
+.map(u=>`<p>${u.raw.NAMA}</p>`).join("");
+}
+
+// LOGOUT
+function logout(){
+if(confirm("Logout?")){
+location.reload();
+}
+}
+
+// AUTO LOGOUT (5 minit)
+function startIdle(){
+clearTimeout(idleTimer);
+document.onmousemove=resetTimer;
+document.onkeypress=resetTimer;
+resetTimer();
+}
+
+function resetTimer(){
+clearTimeout(idleTimer);
+idleTimer=setTimeout(()=>{
+alert("Auto logout");
+location.reload();
+},300000);
 }
 </script>
 
