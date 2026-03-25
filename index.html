@@ -3,21 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistem Pengurusan Identiti Pegawai SPOA</title>
+<title>SISTEM PENGURUSAN IDENTITI PEGAWAI SPOA</title>
 
 <style>
-body {font-family:'Segoe UI';margin:0;background:#fff;}
-header {
+body{font-family:'Segoe UI';margin:0;background:#f1f5f9;}
+header{
 background:#392f48;color:white;padding:15px;
 display:flex;align-items:center;gap:10px;
 border-bottom:4px solid #c3a244;
 }
 header img{height:40px;}
-header h1{font-size:16px;margin:0;}
 
-.login-box{max-width:350px;margin:60px auto;text-align:center;}
-.login-box img{width:90px;}
-
+.container{padding:20px;}
 .card{
 background:white;padding:20px;border-radius:15px;
 box-shadow:0 6px 15px rgba(0,0,0,0.2);
@@ -31,19 +28,19 @@ border-radius:8px;border:1px solid #ccc;
 
 button{
 padding:12px;background:#392f48;color:white;
-border:none;border-radius:8px;font-weight:bold;
-width:100%;
+border:none;border-radius:8px;width:100%;
 }
 
 .nav{display:flex;gap:10px;margin-bottom:15px;}
 .nav button{flex:1;}
 
 .hidden{display:none;}
-.section{border-top:3px solid #c3a244;padding-top:10px;}
 
-.data-row{padding:6px;border-bottom:1px solid #eee;}
-
-.news-img{width:100%;border-radius:10px;margin-top:10px;}
+.profile-img{
+width:120px;height:120px;border-radius:50%;
+object-fit:cover;border:3px solid #c3a244;
+display:block;margin:auto;
+}
 </style>
 </head>
 
@@ -51,11 +48,11 @@ width:100%;
 
 <header>
 <img src="logospoa.png">
-<h1>SISTEM PENGURUSAN IDENTITI SPOA</h1>
+<h2>SISTEM PENGURUSAN IDENTITI PEGAWAI SPOA</h2>
 </header>
 
-<div id="loginPage" class="login-box">
-<img src="logospoa.png">
+<!-- LOGIN -->
+<div id="loginPage" class="container">
 <div class="card">
 <h2>Selamat Datang</h2>
 <input id="username" placeholder="Username">
@@ -64,6 +61,7 @@ width:100%;
 </div>
 </div>
 
+<!-- MAIN -->
 <div id="mainPage" class="container hidden">
 
 <div class="nav">
@@ -73,49 +71,55 @@ width:100%;
 <button onclick="logout()">Logout</button>
 </div>
 
-<div id="home" class="card section"></div>
+<div id="home" class="card"></div>
 
-<div id="news" class="card section hidden">
+<div id="news" class="card hidden">
 <h2>Pengumuman</h2>
 <div id="newsList"></div>
 </div>
 
-<div id="admin" class="card section hidden">
+<div id="admin" class="card hidden">
 <h2>Admin Panel</h2>
 
-<textarea id="newsText" placeholder="Tulis pengumuman"></textarea>
-<input id="imgUrl" placeholder="Link gambar (optional)">
-<button onclick="addNews()">Tambah News</button>
+<h3>Tambah News</h3>
+<textarea id="newsText"></textarea>
+<input type="file" id="newsImg">
+<button onclick="addNews()">Tambah</button>
 
-<hr>
-
-<input id="searchUser" placeholder="Cari pengguna..." onkeyup="searchUser()">
-<div id="userList"></div>
+<h3>Upload Profile</h3>
+<input id="targetUser" placeholder="Nama pertama">
+<input type="file" id="profileImg">
+<button onclick="uploadProfile()">Upload</button>
 
 </div>
 
 </div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"></script>
 
 <script>
-let users=[];
-let news=JSON.parse(localStorage.getItem("news")||"[]");
-let idleTimer;
-
-// LOAD DATA
-fetch("SPISPOA.json")
-.then(r=>r.json())
-.then(data=>{
-users=data.map(x=>{
-return{
-raw:x,
-first:x.NAMA?.split(" ")[0]?.toUpperCase()||"",
-ic:(x["KAD PENGENALAN"]+"").replace(/[^0-9]/g,'')
+// 🔥 LETAK CONFIG KAMU SINI
+const firebaseConfig = {
+  apiKey: "AIzaSyAXiaLnU_GIaqOJqdY4IORIHt9KtWIpjzI",
+  authDomain: "idpspoa.firebaseapp.com",
+  projectId: "idpspoa",
+  storageBucket: "idpspoa.firebasestorage.app",
+  messagingSenderId: "432913020181",
+  appId: "1:432913020181:web:4f074081f4744d86fc651c",
+  measurementId: "G-TZC6TYDJEW"
 };
-});
-});
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+let currentUser=null;
 
 // LOGIN
-function login(){
+async function login(){
 let u=username.value.toUpperCase();
 let p=password.value;
 
@@ -123,21 +127,21 @@ let p=password.value;
 if(u==="ADMINSPOA2327" && p==="SPOACEMERLANG2327"){
 adminBtn.classList.remove("hidden");
 openMain();
-home.innerHTML="<h2>Selamat datang Admin</h2>";
-renderUsers();
-startIdle();
+home.innerHTML="<h2>Admin Mode</h2>";
+loadNews();
 return;
 }
 
 // USER
-let found=users.find(x=>x.first===u && x.ic===p);
-if(found){
+let snap=await db.collection("users").get();
+snap.forEach(doc=>{
+let d=doc.data();
+if(d.first===u && d.ic===p){
+currentUser=d;
 openMain();
-renderData(found.raw);
-startIdle();
-}else{
-alert("Login gagal");
+renderProfile(d);
 }
+});
 }
 
 function openMain(){
@@ -145,77 +149,72 @@ loginPage.classList.add("hidden");
 mainPage.classList.remove("hidden");
 }
 
-// PAPAR DATA
-function renderData(data){
-let html="<h2>Maklumat Lengkap</h2>";
-for(let k in data){
-if(data[k]){
-html+=`<div class='data-row'><b>${k}:</b> ${data[k]}</div>`;
+// PROFILE
+function renderProfile(d){
+home.innerHTML=`
+<img src="${d.img||''}" class="profile-img">
+<h2>${d.name}</h2>
+<p>IC: ${d.ic}</p>
+<p>Kelas: ${d.kelas}</p>
+`;
 }
+
+// NEWS
+async function addNews(){
+let file=newsImg.files[0];
+let ref=storage.ref("news/"+file.name);
+await ref.put(file);
+let url=await ref.getDownloadURL();
+
+await db.collection("news").add({
+text:newsText.value,
+img:url
+});
+alert("Berjaya");
 }
-home.innerHTML=html;
+
+async function loadNews(){
+let snap=await db.collection("news").get();
+newsList.innerHTML="";
+snap.forEach(doc=>{
+let n=doc.data();
+newsList.innerHTML+=`
+<div class="card">
+<p>${n.text}</p>
+<img src="${n.img}" style="width:100%">
+</div>`;
+});
+}
+
+// PROFILE UPLOAD
+async function uploadProfile(){
+let name=targetUser.value.toUpperCase();
+let file=profileImg.files[0];
+
+let ref=storage.ref("profile/"+file.name);
+await ref.put(file);
+let url=await ref.getDownloadURL();
+
+let snap=await db.collection("users").get();
+snap.forEach(async doc=>{
+let d=doc.data();
+if(d.first===name){
+await db.collection("users").doc(doc.id).update({img:url});
+alert("Updated!");
+}
+});
 }
 
 // NAV
 function show(id){
-document.querySelectorAll(".section").forEach(x=>x.classList.add("hidden"));
+document.querySelectorAll(".card").forEach(x=>x.classList.add("hidden"));
 document.getElementById(id).classList.remove("hidden");
-if(id==="news") renderNews();
-}
-
-// NEWS
-function addNews(){
-let t=newsText.value;
-let i=imgUrl.value;
-
-news.push({t,i});
-localStorage.setItem("news",JSON.stringify(news));
-
-newsText.value="";
-imgUrl.value="";
-renderNews();
-}
-
-function renderNews(){
-newsList.innerHTML=news.map(n=>`
-<div class="card">
-<p>${n.t}</p>
-${n.i?`<img src="${n.i}" class="news-img">`:""}
-</div>`).join("");
-}
-
-// USERS
-function renderUsers(){
-userList.innerHTML=users.map(u=>`<p>${u.raw.NAMA}</p>`).join("");
-}
-
-function searchUser(){
-let q=searchUser.value.toLowerCase();
-userList.innerHTML=users.filter(u=>u.raw.NAMA.toLowerCase().includes(q))
-.map(u=>`<p>${u.raw.NAMA}</p>`).join("");
+if(id==="news") loadNews();
 }
 
 // LOGOUT
 function logout(){
-if(confirm("Logout?")){
 location.reload();
-}
-}
-
-// AUTO LOGOUT (5 minit)
-function startIdle(){
-clearTimeout(idleTimer);
-document.onmousemove=resetTimer;
-document.onkeypress=resetTimer;
-resetTimer();
-}
-
-function resetTimer(){
-clearTimeout(idleTimer);
-idleTimer=setTimeout(()=>{
-alert("Auto logout");
-location.reload();
-},300000);
 }
 </script>
 
