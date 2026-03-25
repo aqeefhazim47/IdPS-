@@ -1,49 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ms">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SISTEM PENGURUSAN IDENTITI SPOA</title>
-
+<title>Sistem SPOA</title>
 
 <style>
-body {font-family: Arial; background:#eef2f7; margin:0}
-header {background:#0f172a; color:white; padding:15px; text-align:center}
-.container {padding:20px}
-.card {background:white; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); margin-bottom:20px}
-input, button, textarea {padding:10px; margin:5px 0; width:100%}
-button {background:#2563eb; color:white; border:none; cursor:pointer; border-radius:6px}
-button:hover {background:#1d4ed8}
-.hidden {display:none}
-.nav {display:flex; gap:10px; margin-bottom:15px}
-.nav button {flex:1}
-p {margin:6px 0}
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg,#1e3a8a,#2563eb);
+    margin:0;
+    color:#333;
+}
+
+header {
+    background:#0f172a;
+    color:white;
+    padding:15px;
+    text-align:center;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.container {
+    padding:20px;
+}
+
+.card {
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.2);
+    margin-bottom:20px;
+}
+
+input, textarea {
+    padding:12px;
+    margin:8px 0;
+    width:100%;
+    border-radius:8px;
+    border:1px solid #ccc;
+}
+
+button {
+    padding:12px;
+    background:#2563eb;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+button:hover {
+    background:#1d4ed8;
+}
+
+.nav {
+    display:flex;
+    gap:10px;
+    margin-bottom:15px;
+}
+
+.nav button {
+    flex:1;
+}
+
+.hidden {display:none;}
+
+.user-box {
+    background:#f1f5f9;
+    padding:15px;
+    border-radius:10px;
+    margin-top:10px;
+}
 </style>
-
-
 </head>
+
 <body>
 
-
-<header>
-<h1>SISTEM PENGURUSAN IDENTITI SPOA</h1>
-</header>
-
+<header>SISTEM PENGURUSAN IDENTITI SPOA</header>
 
 <!-- LOGIN -->
 <div class="container" id="loginPage">
 <div class="card">
 <h2>Login</h2>
-<input id="username" placeholder="Username (Nama Pertama)">
-<input id="password" placeholder="Kad Pengenalan" type="password">
+<input id="username" placeholder="Nama Pertama / Admin">
+<input id="password" placeholder="Kad Pengenalan / Password">
 <button onclick="login()">Login</button>
 </div>
 </div>
 
-
 <!-- MAIN -->
 <div class="container hidden" id="mainPage">
-
 
 <div class="nav">
 <button onclick="showSection('home')">Home</button>
@@ -51,148 +100,103 @@ p {margin:6px 0}
 <button id="adminBtn" class="hidden" onclick="showSection('admin')">Admin</button>
 </div>
 
-
 <div id="home" class="card"></div>
 
-
 <div id="news" class="card hidden">
-<h2>News</h2>
+<h2>Pengumuman</h2>
 <div id="newsList"></div>
 </div>
 
-
 <div id="admin" class="card hidden">
 <h2>Admin Panel</h2>
+
 <textarea id="newsInput" placeholder="Tulis pengumuman..."></textarea>
 <button onclick="addNews()">Tambah News</button>
+
+<hr>
+
+<h3>Senarai Pengguna</h3>
+<input id="searchUser" placeholder="Cari nama..." onkeyup="searchUser()">
+<div id="userList"></div>
+
 </div>
 
-
 </div>
-
 
 <script>
 let users = [];
 let news = [];
 let currentUser = null;
 
-
-// LOAD JSON DATA
+// LOAD JSON
 async function loadData(){
-try{
 let res = await fetch("SPISPOA.json");
 let data = await res.json();
 
-
-users = data
-.filter(r => r["NAMA"] && r["NAMA"] !== "" && !r["NAMA"].includes("NOTA"))
-.map(r => {
-
-
-// CLEAN IC
-let icRaw = (r["KAD PENGENALAN"] || "").toString();
-let icClean = icRaw.replace(/[^0-9]/g, "");
-
-
-// FIRST NAME
-let firstName = r["NAMA"].split(" ")[0].toUpperCase();
-
-
+users = data.filter(r=>r.NAMA && !r.NAMA.includes("NOTA")).map(r=>{
 return {
-name: r["NAMA"],
-first: firstName,
-ic: icClean,
-kelas: r["KELAS"] || "-",
-kumpulan: r["KUMPULAN PERKHIDMATAN"] || "-",
-jawatan: r["JAWATAN"] || "-",
-gred: r["GRED"] || "-",
-st: r["ST"] || "-",
-lantikan: r["LANTIKAN"] || "-"
+name:r.NAMA,
+first:r.NAMA.split(" ")[0].toUpperCase(),
+ic:(r["KAD PENGENALAN"]+"").replace(/[^0-9]/g,''),
+kelas:r.KELAS || "-"
 };
 });
-
-
-console.log("Data loaded:", users.length);
-
-
-}catch(err){
-console.error(err);
-alert("Gagal load data JSON");
 }
-}
-
-
 loadData();
-
 
 // LOGIN
 function login(){
-
-
-if(users.length === 0){
-alert("Data belum siap loading, sila tunggu...");
-return;
-}
-
-
 let u = document.getElementById("username").value.trim().toUpperCase();
-let p = document.getElementById("password").value.replace(/[^0-9]/g, '');
+let p = document.getElementById("password").value;
 
-
-// ADMIN LOGIN
-if(u === "ADMINSPOA2327" && p === "SPOACEMERLANG2327"){
-currentUser = "admin";
-document.getElementById("loginPage").classList.add("hidden");
-document.getElementById("mainPage").classList.remove("hidden");
+// ADMIN
+if(u==="ADMINSPOA2327" && p==="SPOACEMERLANG2327"){
+currentUser="admin";
 document.getElementById("adminBtn").classList.remove("hidden");
-document.getElementById("home").innerHTML = "<h2>Selamat Datang Admin</h2>";
+openMain();
+document.getElementById("home").innerHTML="<h2>Selamat Datang Admin</h2>";
+renderUserList();
 return;
 }
 
-
-// USER LOGIN
-let found = users.find(x => x.first === u && x.ic === p);
-
-
+// USER
+let found = users.find(x=>x.first===u && x.ic===p);
 if(found){
-currentUser = found;
-document.getElementById("loginPage").classList.add("hidden");
-document.getElementById("mainPage").classList.remove("hidden");
+currentUser=found;
+openMain();
 renderHome();
 }else{
-alert("Login gagal. Sila semak nama pertama dan IC.");
+alert("Login gagal");
 }
 }
 
+function openMain(){
+document.getElementById("loginPage").classList.add("hidden");
+document.getElementById("mainPage").classList.remove("hidden");
+}
 
-// HOME DISPLAY
+// HOME
 function renderHome(){
-let u = currentUser;
-document.getElementById("home").innerHTML = `
-<h2>Maklumat Pengguna</h2>
-<p><b>NAMA :</b> ${u.name}</p>
-<p><b>KELAS :</b> ${u.kelas}</p>
-<p><b>KAD PENGENALAN :</b> ${u.ic}</p>
-<p><b>KUMPULAN PERKHIDMATAN :</b> ${u.kumpulan}</p>
-<p><b>JAWATAN :</b> ${u.jawatan}</p>
-<p><b>GRED :</b> ${u.gred}</p>
-<p><b>ST :</b> ${u.st}</p>
-<p><b>LANTIKAN :</b> ${u.lantikan}</p>
-`;
+let u=currentUser;
+document.getElementById("home").innerHTML=`
+<h2>Maklumat</h2>
+<div class="user-box">
+<p><b>Nama:</b> ${u.name}</p>
+<p><b>Kelas:</b> ${u.kelas}</p>
+<p><b>IC:</b> ${u.ic}</p>
+</div>`;
 }
 
-
-// NAVIGATION
+// NAV
 function showSection(id){
 document.querySelectorAll("#mainPage .card").forEach(el=>el.classList.add("hidden"));
 document.getElementById(id).classList.remove("hidden");
-if(id === "news") renderNews();
+if(id==="news") renderNews();
 }
-
 
 // NEWS
 function addNews(){
-let text = document.getElementById("newsInput").value;
+let text=document.getElementById("newsInput").value;
 if(text){
 news.push(text);
 document.getElementById("newsInput").value="";
@@ -200,13 +204,25 @@ renderNews();
 }
 }
 
-
 function renderNews(){
-let list = document.getElementById("newsList");
-list.innerHTML = news.map(n=>`<p>• ${n}</p>`).join("");
+let list=document.getElementById("newsList");
+list.innerHTML=news.map(n=>`<p>• ${n}</p>`).join("");
+}
+
+// ADMIN USER LIST
+function renderUserList(){
+let list=document.getElementById("userList");
+list.innerHTML=users.map(u=>`<p>${u.name}</p>`).join("");
+}
+
+// SEARCH
+function searchUser(){
+let q=document.getElementById("searchUser").value.toLowerCase();
+let list=document.getElementById("userList");
+list.innerHTML=users.filter(u=>u.name.toLowerCase().includes(q))
+.map(u=>`<p>${u.name}</p>`).join("");
 }
 </script>
-
 
 </body>
 </html>
