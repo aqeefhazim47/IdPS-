@@ -38,7 +38,7 @@ width:100%;
 transition:0.3s;
 }
 
-/* 🔥 MENU IMPROVEMENT */
+/* MENU */
 #menuBox {
 padding:15px;
 border-radius:20px;
@@ -121,7 +121,7 @@ to{opacity:1; transform:translateY(0);}
 <div id="upload" class="card section hidden">
 <h2>Hantar Kerja</h2>
 <input id="namaPelajar" placeholder="Nama">
-<input id="linkKerja" placeholder="Link kerja (Google Drive dll)">
+<input id="linkKerja" placeholder="Link kerja">
 <button onclick="hantarKerja()">Hantar</button>
 <p id="statusHantar"></p>
 </div>
@@ -166,6 +166,7 @@ first:x.NAMA?.split(" ")[0]?.toUpperCase()||"",
 ic:(x["KAD PENGENALAN"]+"").replace(/[^0-9]/g,'')
 };
 });
+renderNews(); // 🔥 sync terus masa load
 });
 
 // LOGIN
@@ -198,7 +199,7 @@ loginPage.classList.add("hidden");
 mainPage.classList.remove("hidden");
 }
 
-// PAPAR DATA FULL JSON
+// PAPAR DATA
 function renderData(data){
 let html="<h2>Maklumat Lengkap</h2>";
 for(let k in data){
@@ -236,13 +237,25 @@ imgUrl.value="";
 renderNews();
 }
 
+// 🔥 DELETE NEWS (ADMIN)
+function deleteNews(index){
+if(confirm("Padam pengumuman ini?")){
+news.splice(index,1);
+localStorage.setItem("news",JSON.stringify(news));
+renderNews();
+}
+}
+
 function renderNews(){
-newsList.innerHTML=news.map(n=>`
+newsList.innerHTML=news.map((n,i)=>`
 <div class="card">
 <p>${n.t}</p>
 ${n.i?`<img src="${n.i}" class="news-img">`:""}
-</div>`).join("");
+${adminBtn.classList.contains("hidden") ? "" : `<button onclick="deleteNews(${i})">Delete</button>`}
+</div>
+`).join("");
 
+/* 🔥 SYNC LOGIN PAGE */
 loginNewsList.innerHTML=news.map(n=>`<p>• ${n.t}</p>`).join("");
 }
 
