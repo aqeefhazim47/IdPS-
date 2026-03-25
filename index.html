@@ -37,7 +37,26 @@ border:none;border-radius:8px;font-weight:bold;
 width:100%;
 transition:0.3s;
 }
-button:hover{transform:scale(1.05);}
+
+/* 🔥 MENU IMPROVEMENT */
+#menuBox {
+padding:15px;
+border-radius:20px;
+background:#f8fafc;
+}
+
+#menuBox button {
+margin:8px 0;
+padding:14px;
+border-radius:12px;
+font-size:15px;
+}
+
+#menuBox button:hover {
+background:#2c2438;
+transform: translateY(-2px);
+box-shadow:0 4px 10px rgba(0,0,0,0.2);
+}
 
 .hidden{display:none;}
 .section{border-top:3px solid #c3a244;padding-top:10px;}
@@ -65,7 +84,7 @@ to{opacity:1; transform:translateY(0);}
 <img src="logospoa.png">
 
 <div class="card">
-<h2>Selamat Datang</h2>
+<h2>Selamat Datang ke IdPSPOA. Sila Log Masuk</h2>
 <input id="username" placeholder="Username">
 <input id="password" placeholder="Password">
 <button onclick="login()">Login</button>
@@ -242,7 +261,7 @@ namaPelajar.value="";
 linkKerja.value="";
 }
 
-// ADMIN VIEW SUBMISSION
+// ADMIN VIEW
 function renderSubmission(){
 submissionList.innerHTML=submissions.map(s=>`
 <div class="card">
@@ -284,12 +303,6 @@ idleTimer=setTimeout(()=>{
 alert("Auto logout");
 location.reload();
 },300000);
-}
-
-#menuBox button:hover {
-background:#2c2438;
-transform: translateY(-2px);
-box-shadow:0 4px 10px rgba(0,0,0,0.2);
 }
 </script>
 
