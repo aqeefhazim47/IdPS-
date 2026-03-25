@@ -23,14 +23,8 @@ header {
     border-bottom:4px solid #c3a244;
 }
 
-header img {
-    height:40px;
-}
-
-header h1 {
-    font-size:18px;
-    margin:0;
-}
+header img { height:40px; }
+header h1 { font-size:16px; margin:0; }
 
 /* LOGIN */
 .login-box {
@@ -44,14 +38,10 @@ header h1 {
     margin-bottom:10px;
 }
 
-.login-box h2 {
-    color:#392f48;
-}
-
 .card {
     background:white;
     padding:20px;
-    border-radius:12px;
+    border-radius:15px;
     box-shadow:0 6px 15px rgba(0,0,0,0.2);
 }
 
@@ -71,17 +61,10 @@ button {
     border:none;
     border-radius:8px;
     font-weight:bold;
-    cursor:pointer;
-}
-
-button:hover {
-    background:#2a2236;
 }
 
 /* MAIN */
-.container {
-    padding:20px;
-}
+.container { padding:20px; }
 
 .nav {
     display:flex;
@@ -89,22 +72,37 @@ button:hover {
     margin-bottom:15px;
 }
 
-.nav button {
-    flex:1;
-}
+.nav button { flex:1; }
 
 .hidden {display:none;}
 
-.news-img {
-    width:100%;
+.section {
+    border-top:3px solid #c3a244;
+    padding-top:10px;
+}
+
+/* DATA DISPLAY */
+.data-box {
+    background:#f8fafc;
+    padding:15px;
     border-radius:10px;
     margin-top:10px;
 }
 
-/* GOLD LINE */
-.section {
-    border-top:3px solid #c3a244;
-    padding-top:10px;
+.data-row {
+    padding:6px 0;
+    border-bottom:1px solid #eee;
+}
+
+.data-row b {
+    color:#392f48;
+}
+
+/* NEWS */
+.news-img {
+    width:100%;
+    border-radius:10px;
+    margin-top:10px;
 }
 </style>
 </head>
@@ -118,9 +116,7 @@ button:hover {
 
 <!-- LOGIN -->
 <div id="loginPage" class="login-box">
-
 <img src="logospoa.png">
-
 <div class="card">
 <h2>Selamat Datang</h2>
 
@@ -167,14 +163,14 @@ button:hover {
 let users=[];
 let news=[];
 
-// LOAD JSON
+// LOAD DATA FULL
 fetch("SPISPOA.json")
 .then(r=>r.json())
 .then(data=>{
 users=data.map(x=>{
 return {
-name:x.NAMA,
-first:x.NAMA.split(" ")[0].toUpperCase(),
+raw:x,
+first:x.NAMA?.split(" ")[0]?.toUpperCase() || "",
 ic:(x["KAD PENGENALAN"]+"").replace(/[^0-9]/g,'')
 }
 });
@@ -198,7 +194,7 @@ return;
 let found=users.find(x=>x.first===u && x.ic===p);
 if(found){
 openMain();
-document.getElementById("home").innerHTML=`<h2>${found.name}</h2>`;
+renderFullData(found.raw);
 }else{
 alert("Login gagal");
 }
@@ -207,6 +203,20 @@ alert("Login gagal");
 function openMain(){
 document.getElementById("loginPage").classList.add("hidden");
 document.getElementById("mainPage").classList.remove("hidden");
+}
+
+// PAPAR SEMUA DATA
+function renderFullData(data){
+let html="<h2>Maklumat Lengkap</h2><div class='data-box'>";
+
+for(let key in data){
+if(data[key]){
+html+=`<div class="data-row"><b>${key}:</b> ${data[key]}</div>`;
+}
+}
+
+html+="</div>";
+document.getElementById("home").innerHTML=html;
 }
 
 // NAV
@@ -222,7 +232,7 @@ function addNews(){
 let text=document.getElementById("newsText").value;
 let img=document.getElementById("imgUrl").value;
 
-news.push({text, img});
+news.push({text,img});
 renderNews();
 }
 
@@ -239,7 +249,7 @@ ${n.img ? `<img src="${n.img}" class="news-img">` : ""}
 // USER LIST
 function renderUsers(){
 let box=document.getElementById("userList");
-box.innerHTML=users.map(u=>`<p>${u.name}</p>`).join("");
+box.innerHTML=users.map(u=>`<p>${u.raw.NAMA}</p>`).join("");
 }
 </script>
 
