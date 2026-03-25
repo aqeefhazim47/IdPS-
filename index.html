@@ -7,6 +7,7 @@
 
 <style>
 body {font-family:'Segoe UI';margin:0;background:#fff;}
+
 header {
 background:#392f48;color:white;padding:15px;
 display:flex;align-items:center;gap:10px;
@@ -15,13 +16,14 @@ border-bottom:4px solid #c3a244;
 header img{height:40px;}
 header h1{font-size:16px;margin:0;}
 
-.login-box{max-width:350px;margin:60px auto;text-align:center;}
+.login-box{max-width:350px;margin:40px auto;text-align:center;}
 .login-box img{width:90px;}
 
 .card{
 background:white;padding:20px;border-radius:15px;
 box-shadow:0 6px 15px rgba(0,0,0,0.2);
 margin-top:10px;
+transition:0.3s;
 }
 
 input,textarea{
@@ -33,17 +35,21 @@ button{
 padding:12px;background:#392f48;color:white;
 border:none;border-radius:8px;font-weight:bold;
 width:100%;
+transition:0.3s;
 }
-
-.nav{display:flex;gap:10px;margin-bottom:15px;}
-.nav button{flex:1;}
+button:hover{transform:scale(1.05);}
 
 .hidden{display:none;}
 .section{border-top:3px solid #c3a244;padding-top:10px;}
 
 .data-row{padding:6px;border-bottom:1px solid #eee;}
-
 .news-img{width:100%;border-radius:10px;margin-top:10px;}
+
+@keyframes fade {
+from{opacity:0; transform:translateY(10px);}
+to{opacity:1; transform:translateY(0);}
+}
+.section{animation:fade 0.4s ease;}
 </style>
 </head>
 
@@ -54,21 +60,33 @@ width:100%;
 <h1>SISTEM PENGURUSAN IDENTITI PEGAWAI SPOA</h1>
 </header>
 
+<!-- LOGIN -->
 <div id="loginPage" class="login-box">
 <img src="logospoa.png">
+
 <div class="card">
-<h2>Selamat Datang ke IdPSPOA. Sila Log Masuk</h2>
+<h2>Selamat Datang</h2>
 <input id="username" placeholder="Username">
 <input id="password" placeholder="Password">
 <button onclick="login()">Login</button>
 </div>
+
+<div class="card">
+<h3>Pengumuman</h3>
+<div id="loginNewsList"></div>
 </div>
 
-<div id="mainPage" class="container hidden">
+</div>
 
-<div class="nav">
+<!-- MAIN -->
+<div id="mainPage" class="hidden" style="padding:20px;">
+
+<button onclick="toggleMenu()">☰ Menu</button>
+
+<div id="menuBox" class="card hidden">
 <button onclick="show('home')">Home</button>
 <button onclick="show('news')">News</button>
+<button onclick="show('upload')">Hantar Kerja</button>
 <button id="adminBtn" class="hidden" onclick="show('admin')">Admin</button>
 <button onclick="logout()">Logout</button>
 </div>
@@ -80,6 +98,16 @@ width:100%;
 <div id="newsList"></div>
 </div>
 
+<!-- HANTAR KERJA -->
+<div id="upload" class="card section hidden">
+<h2>Hantar Kerja</h2>
+<input id="namaPelajar" placeholder="Nama">
+<input id="linkKerja" placeholder="Link kerja (Google Drive dll)">
+<button onclick="hantarKerja()">Hantar</button>
+<p id="statusHantar"></p>
+</div>
+
+<!-- ADMIN -->
 <div id="admin" class="card section hidden">
 <h2>Admin Panel</h2>
 
@@ -89,8 +117,14 @@ width:100%;
 
 <hr>
 
+<h3>Senarai Pengguna</h3>
 <input id="searchUser" placeholder="Cari pengguna..." onkeyup="searchUser()">
 <div id="userList"></div>
+
+<hr>
+
+<h3>Senarai Hantaran Kerja</h3>
+<div id="submissionList"></div>
 
 </div>
 
@@ -99,9 +133,10 @@ width:100%;
 <script>
 let users=[];
 let news=JSON.parse(localStorage.getItem("news")||"[]");
+let submissions=JSON.parse(localStorage.getItem("submissions")||"[]");
 let idleTimer;
 
-// LOAD DATA
+// LOAD JSON
 fetch("SPISPOA.json")
 .then(r=>r.json())
 .then(data=>{
@@ -119,17 +154,16 @@ function login(){
 let u=username.value.toUpperCase();
 let p=password.value;
 
-// ADMIN
 if(u==="ADMINSPOA2327" && p==="SPOACEMERLANG2327"){
 adminBtn.classList.remove("hidden");
 openMain();
 home.innerHTML="<h2>Selamat datang Admin</h2>";
 renderUsers();
+renderSubmission();
 startIdle();
 return;
 }
 
-// USER
 let found=users.find(x=>x.first===u && x.ic===p);
 if(found){
 openMain();
@@ -145,7 +179,7 @@ loginPage.classList.add("hidden");
 mainPage.classList.remove("hidden");
 }
 
-// PAPAR DATA
+// PAPAR DATA FULL JSON
 function renderData(data){
 let html="<h2>Maklumat Lengkap</h2>";
 for(let k in data){
@@ -156,11 +190,18 @@ html+=`<div class='data-row'><b>${k}:</b> ${data[k]}</div>`;
 home.innerHTML=html;
 }
 
+// MENU
+function toggleMenu(){
+menuBox.classList.toggle("hidden");
+}
+
 // NAV
 function show(id){
 document.querySelectorAll(".section").forEach(x=>x.classList.add("hidden"));
 document.getElementById(id).classList.remove("hidden");
+
 if(id==="news") renderNews();
+if(id==="admin") renderSubmission();
 }
 
 // NEWS
@@ -182,6 +223,33 @@ newsList.innerHTML=news.map(n=>`
 <p>${n.t}</p>
 ${n.i?`<img src="${n.i}" class="news-img">`:""}
 </div>`).join("");
+
+loginNewsList.innerHTML=news.map(n=>`<p>• ${n.t}</p>`).join("");
+}
+
+// HANTAR KERJA
+function hantarKerja(){
+let nama=namaPelajar.value;
+let link=linkKerja.value;
+
+if(!nama || !link) return alert("Isi semua");
+
+submissions.push({nama,link});
+localStorage.setItem("submissions",JSON.stringify(submissions));
+
+statusHantar.innerText="✅ Berjaya dihantar!";
+namaPelajar.value="";
+linkKerja.value="";
+}
+
+// ADMIN VIEW SUBMISSION
+function renderSubmission(){
+submissionList.innerHTML=submissions.map(s=>`
+<div class="card">
+<p><b>${s.nama}</b></p>
+<a href="${s.link}" target="_blank">${s.link}</a>
+</div>
+`).join("");
 }
 
 // USERS
@@ -202,7 +270,7 @@ location.reload();
 }
 }
 
-// AUTO LOGOUT (5 minit)
+// AUTO LOGOUT
 function startIdle(){
 clearTimeout(idleTimer);
 document.onmousemove=resetTimer;
